@@ -480,6 +480,27 @@ HTTP1_DissectRequest(struct http_conn *htc, struct http *hp)
 		}
 	}
 
+	/*
+	 * Make sure that we have a valid URI at this point.
+	 * A URI must start with either a '/' be an exact '*'
+	 * for an "OPTIONS * HTTP/1.1" request, for example.
+	 * See RFC2616, section 5.2, point 2
+	 */
+	e = hp->hd[HTTP_HDR_URL].b;
+	switch (*e) {
+	case '/':
+		/* URL should start with a '/' */
+		break;
+	case '*':
+		/* Or a single '*' */
+		e++;
+		if (*e != '\0')
+			return (400);
+		break;
+	default:
+		return (400);
+	}
+
 	htc->body_status = http1_body_status(hp, htc);
 	if (htc->body_status == BS_ERROR)
 		return (400);
